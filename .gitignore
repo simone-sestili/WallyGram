@@ -3,3 +3,4 @@ assets/
 models/
 CLIP_exp.ipynb
 data/unsplash-*
+data/images_*

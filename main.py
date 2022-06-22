@@ -1,13 +1,14 @@
+from concurrent.futures import process
 import os
 import json
 from turtle import up
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Bot
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import *
 
 
 from train import train_pipeline
-from sbert import load_data, load_model, load_embeddings, text2image
+from sbert import load_model, load_embeddings, text2image
 
 
 PROJECT_CONFIG = 'config_unsplash.json'
@@ -16,34 +17,44 @@ PROJECT_CONFIG = 'config_unsplash.json'
 # ========== INITIALIZATION ==========
 
 print('Initialization...')
+
 config = json.load(open(PROJECT_CONFIG))
-config['embeddings']['path'] = os.path.join(config['data']['folder'], config['embeddings']['filename'])
+
+# load device-independent model
+model = load_model(model_folder=config['model']['folder'], model_name=config['model']['name'])
+
+embeddings = {}
+for device in ['mobile', 'desktop']:
+    
+    # os-independent creation of paths
+    for filetype in ['images_folder', 'embeddings', 'top_categories', 'classification_labels']:
+        config[device][filetype]['path'] = os.path.join(config['data_folder'], config[device][filetype]['filename'])
+        
+    # if not all files generated with train.py are present then the embeddings creation pipeline has to be run
+    if config[device]['embeddings']['filename'] not in os.listdir(config['data_folder']) or config[device]['top_categories']['filename'] not in os.listdir(config['data_folder']):
+        print(f'{device} pipeline execution...')
+        print(train_pipeline(model, config[device]))
+
+    # load local variables for model and embeddings
+    embeddings[device] = load_embeddings(
+        data=config[device]['images_folder']['path'],
+        model=model,
+        embeddings_path=config[device]['embeddings']['path'],
+        use_precomputed=config[device]['embeddings']['use_precomputed_embeddings'],
+        batch_size=config[device]['embeddings']['batch_size'],
+        download_url=config[device]['embeddings']['download_url'],
+        data_type='image'
+    )
+
+
+# initialize processes status with default values
 processes = {
     'ready_for_input': False,
     'device_selected': '',
-    'result_images': []
+    'result_images': [],
+    'current_image_path': ''
 }
 
-# if all files generated with train.py are not present then it has to be run
-if config['embeddings']['filename'] not in os.listdir(config['data']['folder']) or config['top_categories']['filename'] not in os.listdir(config['data']['folder']):
-    print(train_pipeline())
-
-folder_file_path = load_data(
-    data_folder=config['data']['folder'],
-    filename=config['data']['filename'],
-    download_url=config['data']['download_url']
-)
-
-model = load_model(model_folder=config['model']['folder'], model_name=config['model']['name'])
-
-image_names, image_embeddings = load_embeddings(
-    data=folder_file_path,
-    model=model,
-    embeddings_path=config['embeddings']['path'],
-    use_precomputed=config['embeddings']['use_precomputed_embeddings'],
-    download_url=config['embeddings']['download_url'],
-    batch_size=config['embeddings']['batch_size'],
-)
 
 
 # ========== TELEGRAM COMMAND FUNCTIONS ==========
@@ -85,49 +96,45 @@ def desktop_command(update, context):
 
 
 def top_categories_command(update, context):
-    top_categories = json.load(open(os.path.join(config['data']['folder'], config['top_categories']['filename'])))
+    device_selected = processes['device_selected']
+    top_categories = json.load(open(config[device_selected]['top_categories']['path'], encoding='utf-8'))
     update.message.reply_text('The top-{} most searched categories are:\n\n{}'.format(len(top_categories), '\n'.join(top_categories)))
 
 
-def show_image(update, context):
+def show_image(update, context, chat_id: str):
     if len(processes['result_images']) == 0:
         update.message.reply_text('No more images to show. Please try with another search.')
     else:
         # get image path
+        device_selected = processes['device_selected']
         image_corpus_id = processes['result_images'].pop(0)['corpus_id']
-        image_path = os.path.join(folder_file_path, image_names[image_corpus_id])
-        print(image_path)
-        # show low-res image
-        chat_id = update.message.chat_id
-        context.bot.send_photo(chat_id=chat_id, photo=open(image_path,'rb'))
-        # show buttons for new download and another image
-        keyboard = [[
-            InlineKeyboardButton("\U0001F4F1 Mobile", callback_data='mobile'),
-            InlineKeyboardButton("\U0001F4BB Desktop", callback_data='desktop'),
+        image_path = os.path.join(config[device_selected]['images_folder']['path'], embeddings[device_selected][0][image_corpus_id])
+        processes['current_image_path'] = image_path
+        # show low-res image and buttons for download and another image
+        button_matrix = [[
+            InlineKeyboardButton("\U0001F5BC Hi-Res image", callback_data='download'),
+            InlineKeyboardButton("\U0001F504 Another image", callback_data='another'),
         ]]
-        update.message.reply_text(
-            f"Hi, I'm {config['bot_name']}, I will help you find a beautiful wallpaper!\nPlease select the device you are searching a wallpaper for.", 
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
+        context.bot.send_photo(chat_id=chat_id, photo=open(image_path,'rb'), reply_markup=InlineKeyboardMarkup(button_matrix))
         # ready to accept new searches
         processes['ready_for_input'] = True
 
 
 def handle_message(update, context):
     user_text = str(update.message.text).lower()
-    print('user_text', user_text)
     if processes['ready_for_input']:
         processes['ready_for_input'] = False
+        device_selected = processes['device_selected']
         processes['result_images'] = text2image(
             query=user_text,
-            image_names=image_names,
-            image_embeddings=image_embeddings,
-            folder_file_path=folder_file_path,
+            image_names=embeddings[device_selected][0],
+            image_embeddings=embeddings[device_selected][1],
+            folder_file_path=config[device_selected]['images_folder']['path'],
             img_model=model,
             top_k=config['text2image']['top_k'],
             DEBUG=False
         )
-        show_image(update, context)
+        show_image(update, context, chat_id=update.message.chat_id)
         
 
 def button(update, context):
@@ -152,7 +159,15 @@ def button(update, context):
         # append new message
         chat_id = query.message.chat_id
         context.bot.send_message(chat_id=chat_id, text='Text me something to search a wallpaper for desktop.\nIf you want to switch to mobile you can simply hit /mobile at any time.')
-        
+    # download hi-res image
+    elif query.data == 'download':
+        chat_id = query.message.chat_id
+        context.bot.send_document(chat_id=chat_id, document=open(processes['current_image_path'], 'rb'))
+    # show another image
+    elif query.data == 'another':
+        chat_id = query.message.chat_id
+        show_image(update, context, chat_id=chat_id)
+
 
 def error(update, context):
     print(f'Update {update} caused error {context}')

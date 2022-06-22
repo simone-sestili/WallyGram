@@ -7,8 +7,6 @@ import torch
 import zipfile
 
 from PIL import Image
-from IPython.display import display
-from IPython.display import Image as IPImage
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer, CrossEncoder, util
 
@@ -164,6 +162,8 @@ def image_clustering(corpus_names: list, corpus_embeddings: list, folder_file_pa
     """
     clusters = util.community_detection(corpus_embeddings, threshold=threshold, min_community_size=min_community_size)
     for cluster in clusters[:clusters_to_show]:
+        from IPython.display import display
+        from IPython.display import Image as IPImage
         print("\n\nCluster size:", len(cluster))
         # output first 3 images
         for idx in cluster[:results_to_show]:
@@ -189,6 +189,8 @@ def image_classification(corpus_names: list, corpus_embeddings: list, folder_fil
     
     # show results
     for idx in range(results_to_show):
+        from IPython.display import display
+        from IPython.display import Image as IPImage
         display(IPImage(os.path.join(folder_file_path, corpus_names[idx]), width=200))
         print(f'Predicted label: {labels[pred_labels[idx]]}\n\n')
         time.sleep(0.1)
@@ -232,6 +234,8 @@ def text2image(query: str, image_names: list, image_embeddings: list, folder_fil
     results = sorted(results, key=lambda x: x['score'], reverse=True)
     
     if DEBUG:
+        from IPython.display import display
+        from IPython.display import Image as IPImage
         # show results
         print('Query:')
         display(query)

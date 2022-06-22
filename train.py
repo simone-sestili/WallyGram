@@ -4,41 +4,22 @@
 import os
 import json
 
-from sbert import load_data, load_model, load_embeddings, image_clustering, image_cluster_labeling
+from sbert import load_model, load_embeddings, image_clustering, image_cluster_labeling
 
 
-PROJECT_CONFIG = 'config_unsplash.json'
+def train_pipeline(model, config: dict):
 
-
-def train_pipeline():
-
-    # ========== INITIALIZATION ==========
-
-    config = json.load(open(PROJECT_CONFIG))
-    config['embeddings']['path'] = os.path.join(config['data']['folder'], config['embeddings']['filename'])
-    config['top_categories']['path'] = os.path.join(config['data']['folder'], config['top_categories']['filename'])
-
-
-    # ========== LOAD DATA ==========
-
-    print('Loading data...')
-    unzip_data_path = load_data(
-        data_folder=config['data']['folder'],
-        filename=config['data']['filename'],
-        download_url=config['data']['download_url']
-    )
-
-    print('Loading model...')
-    model = load_model(model_folder=config['model']['folder'], model_name=config['model']['name'])
+    # ========== COMPUTE EMBEDDINGS ==========
 
     print('Loading embeddings...')
     corpus_names, corpus_embeddings = load_embeddings(
-        data=unzip_data_path,
+        data=config['images_folder']['path'],
         model=model,
         embeddings_path=config['embeddings']['path'],
         use_precomputed=config['embeddings']['use_precomputed_embeddings'],
-        download_url=config['embeddings']['download_url'],
         batch_size=config['embeddings']['batch_size'],
+        download_url=config['embeddings']['download_url'],
+        data_type='image'
     )
 
 
@@ -47,7 +28,7 @@ def train_pipeline():
     print('Clustering started...')
     clusters = image_clustering(
         corpus_names, corpus_embeddings,
-        folder_file_path=unzip_data_path,
+        folder_file_path=config['images_folder']['path'],
         threshold=config['clustering']['threshold'],
         min_community_size=config['clustering']['min_community_size'],
         clusters_to_show=0,
@@ -55,7 +36,7 @@ def train_pipeline():
     )
 
     print('Cluster labeling started...')
-    labels_all = json.load(open(os.path.join(config['data']['folder'], config['classification_labels']['filename']), encoding='utf-8'))
+    labels_all = json.load(open(config['classification_labels']['path'], encoding='utf-8'))
     top_categories = image_cluster_labeling(
         clusters=clusters[:config['top_categories']['number']],
         labels=labels_all,
@@ -70,4 +51,16 @@ def train_pipeline():
 
 
 if __name__ == '__main__':
-    print(train_pipeline())
+    # load config file
+    PROJECT_CONFIG = 'config_unsplash.json'
+    config = json.load(open(PROJECT_CONFIG))
+    # load device-independent model
+    model = load_model(model_folder=config['model']['folder'], model_name=config['model']['name'])
+    
+    for device in ['mobile', 'desktop']:
+        # os-independent creation of paths
+        for filetype in ['images_folder', 'embeddings', 'top_categories', 'classification_labels']:
+            config[device][filetype]['path'] = os.path.join(config['data_folder'], config[device][filetype]['filename'])
+        # execute pipeline
+        print(f'{device} pipeline execution...')
+        print(train_pipeline(model, config[device]))

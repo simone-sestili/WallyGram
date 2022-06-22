@@ -1,31 +1,54 @@
 {
     "API_KEY": "5551201309:AAFCsOl03YbF-sF2FW3A_kX1MJ8F3P1iLLQ",
     "bot_name": "WallGram",
-    "data": {
-        "folder": "data",
-        "filename": "unsplash-25k-photos.zip",
-        "download_url": "http://sbert.net/datasets/unsplash-25k-photos.zip"
+    "data_folder": "data",
+    "mobile": {
+        "images_folder": {
+            "filename": "images_mobile"
+        },
+        "embeddings": {
+            "filename": "images_mobile_embeddings.pkl",
+            "batch_size": 128,
+            "use_precomputed_embeddings": true,
+            "download_url": "http://sbert.net/datasets/unsplash-25k-photos-embeddings.pkl"
+        },
+        "clustering": {
+            "threshold": 0.9,
+            "min_community_size": 10
+        },
+        "top_categories": {
+            "number": 10,
+            "filename": "top_categories_mobile.json"
+        },
+        "classification_labels": {
+            "filename": "labels_all.json"
+        }
+    },
+    "desktop": {
+        "images_folder": {
+            "filename": "images_desktop"
+        },
+        "embeddings": {
+            "filename": "images_desktop_embeddings.pkl",
+            "batch_size": 128,
+            "use_precomputed_embeddings": true,
+            "download_url": "http://sbert.net/datasets/unsplash-25k-photos-embeddings.pkl"
+        },
+        "clustering": {
+            "threshold": 0.9,
+            "min_community_size": 10
+        },
+        "top_categories": {
+            "number": 10,
+            "filename": "top_categories_desktop.json"
+        },
+        "classification_labels": {
+            "filename": "labels_all.json"
+        }
     },
     "model": {
         "folder": "models",
         "name": "clip-ViT-B-32"
-    },
-    "embeddings": {
-        "filename": "unsplash-25k-photos-embeddings.pkl",
-        "download_url": "http://sbert.net/datasets/unsplash-25k-photos-embeddings.pkl",
-        "batch_size": 128,
-        "use_precomputed_embeddings": true
-    },
-    "clustering": {
-        "threshold": 0.9,
-        "min_community_size": 10
-    },
-    "top_categories": {
-        "number": 10,
-        "filename": "top_categories.json"
-    },
-    "classification_labels": {
-        "filename": "labels_all.json"
     },
     "text2image": {
         "top_k": 50
