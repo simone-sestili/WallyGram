@@ -1,0 +1,5 @@
+__pycache__/
+assets/
+models/
+CLIP_exp.ipynb
+data/unsplash-*
