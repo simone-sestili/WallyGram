@@ -1,0 +1,1 @@
+docker build -t wallygram:1.0 .
