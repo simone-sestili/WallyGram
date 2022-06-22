@@ -1,13 +1,11 @@
-from concurrent.futures import process
 import os
 import json
-from turtle import up
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import *
 
-
 from train import train_pipeline
+from dataloader import get_data_zipweb, mobile_desktop_split
 from sbert import load_model, load_embeddings, text2image
 
 
@@ -30,9 +28,16 @@ for device in ['mobile', 'desktop']:
     for filetype in ['images_folder', 'embeddings', 'top_categories', 'classification_labels']:
         config[device][filetype]['path'] = os.path.join(config['data_folder'], config[device][filetype]['filename'])
         
+    # if explicitly specified in the the configuration file, refresh the dataset of images
+    if config['refresh_images']:
+        # download zip and extract all images
+        images_all_folder_path = get_data_zipweb(config, 'unsplash-25k-photos.zip')
+        # split by device
+        mobile_desktop_split(config, images_all_folder_path)
+    
     # if not all files generated with train.py are present then the embeddings creation pipeline has to be run
     if config[device]['embeddings']['filename'] not in os.listdir(config['data_folder']) or config[device]['top_categories']['filename'] not in os.listdir(config['data_folder']):
-        print(f'{device} pipeline execution...')
+        print(f'> {device} pipeline execution...')
         print(train_pipeline(model, config[device]))
 
     # load local variables for model and embeddings
@@ -42,15 +47,14 @@ for device in ['mobile', 'desktop']:
         embeddings_path=config[device]['embeddings']['path'],
         use_precomputed=config[device]['embeddings']['use_precomputed_embeddings'],
         batch_size=config[device]['embeddings']['batch_size'],
-        download_url=config[device]['embeddings']['download_url'],
         data_type='image'
     )
 
 
 # initialize processes status with default values
 processes = {
-    'ready_for_input': False,
-    'device_selected': '',
+    'ready_for_input': True,
+    'device_selected': 'mobile',
     'result_images': [],
     'current_image_path': ''
 }

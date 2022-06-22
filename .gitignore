@@ -1,6 +1,6 @@
-__pycache__/
+app/__pycache__/
 assets/
-models/
-CLIP_exp.ipynb
-data/unsplash-*
-data/images_*
+app/models/
+app/CLIP_exp.ipynb
+app/data/unsplash-*
+app/data/images_*

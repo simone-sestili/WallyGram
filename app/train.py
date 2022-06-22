@@ -18,7 +18,6 @@ def train_pipeline(model, config: dict):
         embeddings_path=config['embeddings']['path'],
         use_precomputed=config['embeddings']['use_precomputed_embeddings'],
         batch_size=config['embeddings']['batch_size'],
-        download_url=config['embeddings']['download_url'],
         data_type='image'
     )
 
@@ -62,5 +61,5 @@ if __name__ == '__main__':
         for filetype in ['images_folder', 'embeddings', 'top_categories', 'classification_labels']:
             config[device][filetype]['path'] = os.path.join(config['data_folder'], config[device][filetype]['filename'])
         # execute pipeline
-        print(f'{device} pipeline execution...')
+        print(f'> {device} pipeline execution...')
         print(train_pipeline(model, config[device]))

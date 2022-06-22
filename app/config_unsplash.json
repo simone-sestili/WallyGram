@@ -2,6 +2,8 @@
     "API_KEY": "5551201309:AAFCsOl03YbF-sF2FW3A_kX1MJ8F3P1iLLQ",
     "bot_name": "WallGram",
     "data_folder": "data",
+    "data_url": "http://sbert.net/datasets/unsplash-25k-photos.zip",
+    "refresh_images": false,
     "mobile": {
         "images_folder": {
             "filename": "images_mobile"
