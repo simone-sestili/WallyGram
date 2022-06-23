@@ -34,6 +34,9 @@ for device in ['mobile', 'desktop']:
         images_all_folder_path = get_data_zipweb(config, 'unsplash-25k-photos.zip')
         # split by device
         mobile_desktop_split(config, images_all_folder_path)
+        # new data requires to train again the embeddings
+        print(f'> {device} pipeline execution...')
+        print(train_pipeline(model, config[device]))
     
     # if not all files generated with train.py are present then the embeddings creation pipeline has to be run
     if config[device]['embeddings']['filename'] not in os.listdir(config['data_folder']) or config[device]['top_categories']['filename'] not in os.listdir(config['data_folder']):
@@ -102,7 +105,7 @@ def desktop_command(update, context):
 def top_categories_command(update, context):
     device_selected = processes['device_selected']
     top_categories = json.load(open(config[device_selected]['top_categories']['path'], encoding='utf-8'))
-    update.message.reply_text('The top-{} most searched categories are:\n\n{}'.format(len(top_categories), '\n'.join(top_categories)))
+    update.message.reply_text('The top-{} most searched categories for {} are:\n\n{}'.format(len(top_categories), device_selected, '\n'.join(top_categories)))
 
 
 def show_image(update, context, chat_id: str):
@@ -112,14 +115,13 @@ def show_image(update, context, chat_id: str):
         # get image path
         device_selected = processes['device_selected']
         image_corpus_id = processes['result_images'].pop(0)['corpus_id']
-        image_path = os.path.join(config[device_selected]['images_folder']['path'], embeddings[device_selected][0][image_corpus_id])
-        processes['current_image_path'] = image_path
+        processes['current_image_path'] = embeddings[device_selected][0][image_corpus_id]
         # show low-res image and buttons for download and another image
         button_matrix = [[
             InlineKeyboardButton("\U0001F5BC Hi-Res image", callback_data='download'),
             InlineKeyboardButton("\U0001F504 Another image", callback_data='another'),
         ]]
-        context.bot.send_photo(chat_id=chat_id, photo=open(image_path,'rb'), reply_markup=InlineKeyboardMarkup(button_matrix))
+        context.bot.send_photo(chat_id=chat_id, photo=open(processes['current_image_path'],'rb'), reply_markup=InlineKeyboardMarkup(button_matrix))
         # ready to accept new searches
         processes['ready_for_input'] = True
 

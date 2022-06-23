@@ -1,4 +1,3 @@
-from audioop import cross
 import os
 import glob
 import re
@@ -12,6 +11,9 @@ from sentence_transformers import SentenceTransformer, CrossEncoder, util
 
 from utils import load_pickle, dump_pickle, argmax_dict
 
+
+# import win32file
+# win32file._setmaxstdio(32768)
 
 
 # ========== PRE-PROCESSING ==========
@@ -141,12 +143,28 @@ def load_embeddings(data, model, embeddings_path: str, use_precomputed: bool = F
     elif data_type == 'image' or type(data) == str:  # assume data is images path
         corpus_names = list(glob.glob(data + '/*'))
         print('Images:', len(corpus_names))
+        
+        # if there are more than 1000 images then shard encodings
+        num_shards = int(len(corpus_names) / 1000) + 1
+        
         corpus_embeddings = model.encode(
-            [Image.open(filepath) for filepath in corpus_names],
+            [Image.open(filepath) for filepath in corpus_names[(num_shards-1)*1000:]],
             batch_size=batch_size,
             convert_to_tensor=True,
             show_progress_bar=True
         )
+        
+        for shard in tqdm(range(1, num_shards)):            
+            tmp = model.encode(
+                [Image.open(filepath) for filepath in corpus_names[(shard-1)*1000:shard*1000]],
+                batch_size=batch_size,
+                convert_to_tensor=True,
+                show_progress_bar=True
+            )
+            corpus_embeddings = torch.cat((corpus_embeddings, tmp), dim=-2)
+
+    print('corpus_names:', len(corpus_names))   
+    print('corpus_embeddings:', len(corpus_embeddings), corpus_embeddings.shape)
     dump_pickle((corpus_names, corpus_embeddings), embeddings_path)
     return corpus_names, corpus_embeddings
 
