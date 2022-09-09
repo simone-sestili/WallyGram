@@ -89,7 +89,7 @@ Use /help if you need further assistance.
 
 
 def help_command(update, context):
-    update.message.reply_text('If you need help, contact @Simon_6')
+    update.message.reply_text('If you need help, contact @{}'.format(config['developer_telegram_username']))
 
 
 def mobile_command(update, context):
