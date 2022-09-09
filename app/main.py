@@ -16,6 +16,8 @@ PROJECT_CONFIG = 'config_unsplash.json'
 
 print('Initialization...')
 
+with open('api.key') as f:
+    API_KEY = f.read()
 config = json.load(open(PROJECT_CONFIG))
 
 # load device-independent model
@@ -180,7 +182,7 @@ def error(update, context):
 
 
 def main():
-    updater = Updater(config['API_KEY'], use_context=True)
+    updater = Updater(API_KEY, use_context=True)
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler('start', start_command))
