@@ -1,5 +1,4 @@
 app/__pycache__/
-assets/
 app/models/
 app/CLIP_exp.ipynb
 app/data/unsplash-*
