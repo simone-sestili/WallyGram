@@ -4,4 +4,5 @@ app/models/
 app/CLIP_exp.ipynb
 app/data/unsplash-*
 app/data/images_*
+app/api.key
 run.bat
