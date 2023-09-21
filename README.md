@@ -1,5 +1,6 @@
 # WallyGram
 
+[PLEASE CONSIDER THAT THIS PROJECT IS MEANT FOR EDUCATIONAL PURPOSES ONLY]
 The purpose of this application is search for wallpapers according to user requests written in natural language. In order to do that the system has a finite dataset of images to choose from, and it integrates a semantic search engine (based on BERT models) in order to find the images that most closely match the meaning of the user request. The user can specify what kind of device they would like the wallpaper for, so that the system will filter the recommended images according to their aspect ratio. The entire application is accessible through a Telegram bot for a user-friendly experience.
 
 # Installation
